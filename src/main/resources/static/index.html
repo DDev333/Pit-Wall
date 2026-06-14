@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Pit Wall — Strategy Dashboard</title>
+  <style>
+    :root{
+      --bg:#071018; /* deep navy */
+      --panel:#0d1a23; /* panel */
+      --muted:#94a3b8;
+      --accent:#00ff99; /* neon green */
+      --accent-2:#ffd166; /* warm yellow */
+      --danger:#ff6b6b;
+      --glass: rgba(255,255,255,0.03);
+      --radius:12px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial}
+    body{background:linear-gradient(180deg,var(--bg),#041018);color:#e6eef6;-webkit-font-smoothing:antialiased}
+    .container{max-width:920px;margin:36px auto;padding:28px}
+    header{display:flex;align-items:center;gap:16px;margin-bottom:18px}
+    h1{margin:0;font-size:20px;color:var(--accent)}
+    p.lead{margin:0;color:var(--muted);font-size:13px}
+
+    .grid{display:grid;grid-template-columns:1fr 380px;gap:20px}
+
+    .card{background:linear-gradient(180deg,rgba(255,255,255,0.02),var(--glass));border:1px solid rgba(255,255,255,0.04);padding:18px;border-radius:var(--radius)}
+
+    form .row{display:flex;gap:12px;margin-bottom:12px}
+    label{display:block;font-size:13px;color:var(--muted)}
+    input[type=number], input[type=checkbox]{width:100%;padding:10px;margin-top:6px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+    .controls{display:flex;gap:10px;align-items:center}
+    button{background:var(--accent);color:#021217;border:0;padding:10px 14px;border-radius:10px;font-weight:600;cursor:pointer}
+    button.secondary{background:transparent;color:var(--accent-2);border:1px solid rgba(255,255,255,0.04)}
+
+    .results h3{margin:0 0 8px 0;color:var(--accent-2)}
+    .result-row{display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:8px;margin-bottom:8px;background:linear-gradient(90deg,rgba(255,255,255,0.01),transparent)}
+    .muted{color:var(--muted);font-size:13px}
+    .big{font-weight:700;font-size:18px}
+    .hidden{display:none}
+
+    footer{margin-top:18px;color:var(--muted);font-size:12px}
+
+    @media (max-width:900px){
+      .grid{grid-template-columns:1fr;}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>Pit Wall — Strategy Dashboard</h1>
+        <p class="lead">Quick strategy calculator — dark dashboard</p>
+      </div>
+    </header>
+
+    <div class="grid">
+      <section class="card">
+        <form id="strategyForm">
+          <div class="row">
+            <div style="flex:1">
+              <label for="currentLap">Current Lap</label>
+              <input id="currentLap" name="currentLap" type="number" min="1" value="10" required />
+            </div>
+
+            <div style="width:140px">
+              <label for="tireAge">Tire Age</label>
+              <input id="tireAge" name="tireAge" type="number" min="0" value="5" required />
+            </div>
+          </div>
+
+          <div class="row" style="align-items:center">
+            <label style="display:flex;align-items:center;gap:10px">
+              <input id="safetyCar" name="safetyCar" type="checkbox" />
+              <span class="muted">Safety Car Deployed</span>
+            </label>
+          </div>
+
+          <div class="controls">
+            <button id="calcBtn" type="submit">Calculate Strategy</button>
+            <button id="resetBtn" type="button" class="secondary">Reset</button>
+            <div id="status" class="muted" style="margin-left:auto">Ready</div>
+          </div>
+        </form>
+        <footer>Send values to <code>/api/strategy</code> and display the response.</footer>
+      </section>
+
+      <aside class="card results" id="resultsCard">
+        <h3>Results</h3>
+        <div id="noResults" class="muted">No results yet. Submit the form to calculate.</div>
+
+        <div id="results" class="hidden">
+          <div class="result-row"><div class="muted">Decision</div><div id="decision" class="big">—</div></div>
+          <div class="result-row"><div class="muted">Reasoning</div><div id="reasoning">—</div></div>
+          <div class="result-row"><div class="muted">Citation</div><div id="citation" class="muted">—</div></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      const form = document.getElementById('strategyForm');
+      const status = document.getElementById('status');
+      const resultsWrap = document.getElementById('results');
+      const resultsCard = document.getElementById('resultsCard');
+      const noResults = document.getElementById('noResults');
+
+      const decisionEl = document.getElementById('decision');
+      const reasoningEl = document.getElementById('reasoning');
+      const citationEl = document.getElementById('citation');
+
+      function showStatus(text){ status.textContent = text }
+      function setLoading(on){ showStatus(on? 'Working…' : 'Ready'); document.getElementById('calcBtn').disabled = on }
+
+      form.addEventListener('submit', async function(e){
+        e.preventDefault();
+        setLoading(true);
+        noResults.classList.add('hidden');
+        resultsWrap.classList.add('hidden');
+
+        const payload = {
+          currentLap: Number(document.getElementById('currentLap').value || 0),
+          tireAge: Number(document.getElementById('tireAge').value || 0),
+          safetyCarDeployed: document.getElementById('safetyCar').checked
+        };
+
+        try{
+          const res = await fetch('/api/strategy', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json', 'Accept':'application/json'},
+            body: JSON.stringify(payload)
+          });
+
+          if(!res.ok){
+            const txt = await res.text();
+            throw new Error('Server responded '+res.status+' — '+txt);
+          }
+
+          const json = await res.json();
+
+          decisionEl.textContent = json.decision ?? '—';
+          reasoningEl.textContent = json.reasoning ?? '—';
+          citationEl.textContent = json.foundryCitation ?? json.citation ?? '—';
+
+          resultsWrap.classList.remove('hidden');
+        }catch(err){
+          noResults.classList.remove('hidden');
+          noResults.textContent = 'Error: '+(err.message||err);
+        }finally{
+          setLoading(false);
+        }
+      });
+
+      document.getElementById('resetBtn').addEventListener('click', function(){
+        document.getElementById('currentLap').value = 10;
+        document.getElementById('tireAge').value = 5;
+        document.getElementById('safetyCar').checked = false;
+        noResults.classList.remove('hidden');
+        resultsWrap.classList.add('hidden');
+        showStatus('Reset');
+        setTimeout(()=>showStatus('Ready'),800);
+      });
+    })();
+  </script>
+</body>
+</html>
