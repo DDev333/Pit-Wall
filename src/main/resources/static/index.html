@@ -61,19 +61,54 @@
         <form id="strategyForm">
           <div class="row">
             <div style="flex:1">
-              <label for="currentLap">Current Lap</label>
-              <input id="currentLap" name="currentLap" type="number" min="1" value="10" required />
+              <label for="lapInput">Current Lap</label>
+              <input id="lapInput" name="currentLap" type="number" min="1" value="10" required />
             </div>
 
             <div style="width:140px">
-              <label for="tireAge">Tire Age</label>
-              <input id="tireAge" name="tireAge" type="number" min="0" value="5" required />
+              <label for="ageInput">Tire Age</label>
+              <input id="ageInput" name="tireAge" type="number" min="0" value="5" required />
+            </div>
+          </div>
+
+          <div class="row">
+            <div style="flex:1">
+              <label for="compoundSelect">Tire Compound</label>
+              <select id="compoundSelect" name="tireCompound">
+                <option value="Soft">Soft</option>
+                <option value="Medium">Medium</option>
+                <option value="Hard">Hard</option>
+              </select>
+            </div>
+
+            <div style="width:140px">
+              <label for="weatherSelect">Weather</label>
+              <select id="weatherSelect" name="weatherCondition">
+                <option value="Dry">Dry</option>
+                <option value="Light Rain">Light Rain</option>
+                <option value="Wet">Wet</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div style="flex:1">
+              <label for="gapInput">Gap to Car Behind (sec)</label>
+              <input id="gapInput" type="number" step="0.1" value="5.0" />
+            </div>
+
+            <div style="width:140px">
+              <label for="trafficSelect">Projected Pit Exit Traffic</label>
+              <select id="trafficSelect">
+                <option value="Clean Air">Clean Air</option>
+                <option value="DRS Train">DRS Train</option>
+              </select>
             </div>
           </div>
 
           <div class="row" style="align-items:center">
             <label style="display:flex;align-items:center;gap:10px">
-              <input id="safetyCar" name="safetyCar" type="checkbox" />
+              <input id="scCheckbox" name="safetyCar" type="checkbox" />
               <span class="muted">Safety Car Deployed</span>
             </label>
           </div>
@@ -122,9 +157,13 @@
         resultsWrap.classList.add('hidden');
 
         const payload = {
-          currentLap: Number(document.getElementById('currentLap').value || 0),
-          tireAge: Number(document.getElementById('tireAge').value || 0),
-          safetyCarDeployed: document.getElementById('safetyCar').checked
+          currentLap: parseInt(document.getElementById('lapInput').value, 10),
+          tireAge: parseInt(document.getElementById('ageInput').value, 10),
+          safetyCarDeployed: document.getElementById('scCheckbox').checked,
+          tireCompound: document.getElementById('compoundSelect').value,
+          weatherCondition: document.getElementById('weatherSelect').value,
+          gapToCarBehind: parseFloat(document.getElementById('gapInput').value),
+          projectedPitExitTraffic: document.getElementById('trafficSelect').value
         };
 
         try{
@@ -155,9 +194,13 @@
       });
 
       document.getElementById('resetBtn').addEventListener('click', function(){
-        document.getElementById('currentLap').value = 10;
-        document.getElementById('tireAge').value = 5;
-        document.getElementById('safetyCar').checked = false;
+        document.getElementById('lapInput').value = 10;
+        document.getElementById('ageInput').value = 5;
+        document.getElementById('compoundSelect').value = 'Soft';
+        document.getElementById('weatherSelect').value = 'Dry';
+        document.getElementById('gapInput').value = '5.0';
+        document.getElementById('trafficSelect').value = 'Clean Air';
+        document.getElementById('scCheckbox').checked = false;
         noResults.classList.remove('hidden');
         resultsWrap.classList.add('hidden');
         showStatus('Reset');
