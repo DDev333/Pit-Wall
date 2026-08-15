@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    @apply bg-[#0b0e14] text-slate-100 font-sans antialiased;
+  }
+  
+  /* Fluid typography for the main title */
+  h1 {
+    font-size: clamp(1.5rem, 4vw + 1rem, 2.5rem);
+  }
+
+  /* Ensure all inputs and buttons meet the 48x48px touch-target accessibility rule for mobile */
+  input, select, button {
+    min-height: 48px;
+  }
+}
