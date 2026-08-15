@@ -13,11 +13,19 @@ export default function App() {
   const [telemetry, setTelemetry] = useState({
     currentLap: 35,
     tireAge: 16,
-    safetyCarDeployed: false,
     tireCompound: 'Medium',
+    lapTimeDelta: 0.0,
+    driverTireManagementSkill: 'Elite',
     weatherCondition: 'Dry',
-    gapToCarBehind: 1.8,
+    trackTemperature: 38.0,
+    trackOvertakingDifficulty: 'Medium',
+    pitLaneTimeLoss: 22.0,
+    gapToCarAhead: 2.5,
+    gapToCarBehind: 5.0,
+    rivalTireCompound: 'Hard',
     projectedPitExitTraffic: 'Clean Air',
+    safetyCarDeployed: false,
+    mandatoryCompoundFulfilled: true,
   });
 
   const [result, setResult] = useState(null);
@@ -45,13 +53,14 @@ export default function App() {
     setLoading(true);
     setError(null);
     const payload = {
+      ...telemetry,
       currentLap: parseInt(telemetry.currentLap, 10),
       tireAge: parseInt(telemetry.tireAge, 10),
-      safetyCarDeployed: telemetry.safetyCarDeployed,
-      tireCompound: telemetry.tireCompound,
-      weatherCondition: telemetry.weatherCondition,
+      trackTemperature: parseFloat(telemetry.trackTemperature),
+      lapTimeDelta: parseFloat(telemetry.lapTimeDelta),
+      gapToCarAhead: parseFloat(telemetry.gapToCarAhead),
       gapToCarBehind: parseFloat(telemetry.gapToCarBehind),
-      projectedPitExitTraffic: telemetry.projectedPitExitTraffic,
+      pitLaneTimeLoss: parseFloat(telemetry.pitLaneTimeLoss),
     };
 
     try {
@@ -82,54 +91,32 @@ export default function App() {
             PIT WALL INTELLIGENCE
           </h1>
         </div>
-        <p className="text-[10px] md:text-xs text-slate-400 font-mono tracking-wider mt-2 uppercase">
-          Gemini 2.5 Strategic Telemetry Engine
-        </p>
       </header>
 
       {/* MAIN GRID */}
-      {/* Mobile: 1 column. Desktop: 12 columns (7 for inputs, 5 for outputs) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
         
         {/* TELEMETRY INPUT PANEL */}
-        <div className="lg:col-span-7 bg-[#161b22] border border-slate-800 rounded-xl p-4 sm:p-6 shadow-2xl flex flex-col gap-5">
-          <h2 className="text-xs sm:text-sm font-semibold text-slate-400 tracking-wider uppercase border-b border-slate-800 pb-2">
-            Live Telemetry Adjustments
+        <div className="lg:col-span-7 bg-[#161b22] border border-slate-800 rounded-xl p-4 sm:p-6 shadow-2xl flex flex-col gap-4">
+          <h2 className="text-xs sm:text-sm font-semibold text-slate-400 tracking-wider uppercase border-b border-slate-800 pb-2 mb-2">
+            Advanced Telemetry Adjustments
           </h2>
 
-          {/* Inner Form Grid: 1 column on mobile, 2 on sm screens and up */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-[10px] sm:text-xs font-mono text-slate-400 block mb-1">CURRENT LAP</label>
-              <input
-                type="number"
-                name="currentLap"
-                value={telemetry.currentLap}
-                onChange={handleChange}
-                className="w-full bg-[#0d1117] border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none transition-colors"
-              />
+              <input type="number" name="currentLap" value={telemetry.currentLap} onChange={handleChange} className="w-full bg-[#0d1117] border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none transition-colors" />
             </div>
             <div>
               <label className="text-[10px] sm:text-xs font-mono text-slate-400 block mb-1">TIRE AGE (LAPS)</label>
-              <input
-                type="number"
-                name="tireAge"
-                value={telemetry.tireAge}
-                onChange={handleChange}
-                className="w-full bg-[#0d1117] border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none transition-colors"
-              />
+              <input type="number" name="tireAge" value={telemetry.tireAge} onChange={handleChange} className="w-full bg-[#0d1117] border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none transition-colors" />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-[10px] sm:text-xs font-mono text-slate-400 block mb-1">COMPOUND</label>
-              <select
-                name="tireCompound"
-                value={telemetry.tireCompound}
-                onChange={handleChange}
-                className="w-full bg-[#0d1117] border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none"
-              >
+              <select name="tireCompound" value={telemetry.tireCompound} onChange={handleChange} className="w-full bg-[#0d1117] border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none">
                 <option value="Soft">Soft (C3/C4)</option>
                 <option value="Medium">Medium (C2/C3)</option>
                 <option value="Hard">Hard (C1/C2)</option>
@@ -138,64 +125,93 @@ export default function App() {
               </select>
             </div>
             <div>
-              <label className="text-[10px] sm:text-xs font-mono text-slate-400 block mb-1">WEATHER CONDITION</label>
-              <select
-                name="weatherCondition"
-                value={telemetry.weatherCondition}
-                onChange={handleChange}
-                className="w-full bg-[#0d1117] border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none"
-              >
-                <option value="Dry">Dry (Track Temp 38°C)</option>
-                <option value="Light Rain">Light Rain (Damp Track)</option>
-                <option value="Heavy Rain">Heavy Rain (Standing Water)</option>
-              </select>
+              <label className="text-[10px] sm:text-xs font-mono text-slate-400 block mb-1">LAP TIME DELTA (SEC)</label>
+              <input type="number" step="0.1" name="lapTimeDelta" value={telemetry.lapTimeDelta} onChange={handleChange} className="w-full bg-[#0d1117] border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none" />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="text-[10px] sm:text-xs font-mono text-slate-400 block mb-1">GAP TO BEHIND (SEC)</label>
-              <input
-                type="number"
-                step="0.1"
-                name="gapToCarBehind"
-                value={telemetry.gapToCarBehind}
-                onChange={handleChange}
-                className="w-full bg-[#0d1117] border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none"
-              />
+              <label className="text-[10px] sm:text-xs font-mono text-slate-400 block mb-1">WEATHER CONDITION</label>
+              <select name="weatherCondition" value={telemetry.weatherCondition} onChange={handleChange} className="w-full bg-[#0d1117] border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none">
+                <option value="Dry">Dry</option>
+                <option value="Light Rain">Light Rain</option>
+                <option value="Heavy Rain">Heavy Rain</option>
+              </select>
             </div>
             <div>
+              <label className="text-[10px] sm:text-xs font-mono text-slate-400 block mb-1">TRACK TEMP (°C)</label>
+              <input type="number" step="0.1" name="trackTemperature" value={telemetry.trackTemperature} onChange={handleChange} className="w-full bg-[#0d1117] border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-[10px] sm:text-xs font-mono text-slate-400 block mb-1">GAP AHEAD (SEC)</label>
+              <input type="number" step="0.1" name="gapToCarAhead" value={telemetry.gapToCarAhead} onChange={handleChange} className="w-full bg-[#0d1117] border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none" />
+            </div>
+            <div>
+              <label className="text-[10px] sm:text-xs font-mono text-slate-400 block mb-1">GAP BEHIND (SEC)</label>
+              <input type="number" step="0.1" name="gapToCarBehind" value={telemetry.gapToCarBehind} onChange={handleChange} className="w-full bg-[#0d1117] border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="text-[10px] sm:text-xs font-mono text-slate-400 block mb-1">RIVAL TIRE</label>
+              <select name="rivalTireCompound" value={telemetry.rivalTireCompound} onChange={handleChange} className="w-full bg-[#0d1117] border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none">
+                <option value="Soft">Soft</option>
+                <option value="Medium">Medium</option>
+                <option value="Hard">Hard</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] sm:text-xs font-mono text-slate-400 block mb-1">OVERTAKE DIFF</label>
+              <select name="trackOvertakingDifficulty" value={telemetry.trackOvertakingDifficulty} onChange={handleChange} className="w-full bg-[#0d1117] border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none">
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] sm:text-xs font-mono text-slate-400 block mb-1">PIT LOSS (SEC)</label>
+              <input type="number" step="0.1" name="pitLaneTimeLoss" value={telemetry.pitLaneTimeLoss} onChange={handleChange} className="w-full bg-[#0d1117] border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
               <label className="text-[10px] sm:text-xs font-mono text-slate-400 block mb-1">PROJECTED PIT EXIT</label>
-              <select
-                name="projectedPitExitTraffic"
-                value={telemetry.projectedPitExitTraffic}
-                onChange={handleChange}
-                className="w-full bg-[#0d1117] border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none"
-              >
+              <select name="projectedPitExitTraffic" value={telemetry.projectedPitExitTraffic} onChange={handleChange} className="w-full bg-[#0d1117] border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none">
                 <option value="Clean Air">Clean Air (+2.5s window)</option>
                 <option value="DRS Train">DRS Train (Heavy Traffic)</option>
               </select>
             </div>
+            <div>
+              <label className="text-[10px] sm:text-xs font-mono text-slate-400 block mb-1">DRIVER SKILL</label>
+              <select name="driverTireManagementSkill" value={telemetry.driverTireManagementSkill} onChange={handleChange} className="w-full bg-[#0d1117] border border-slate-700 rounded-lg px-3 py-2 text-sm focus:border-red-500 focus:outline-none">
+                <option value="Elite">Elite (Extended Life)</option>
+                <option value="Standard">Standard</option>
+                <option value="Aggressive">Aggressive (High Wear)</option>
+              </select>
+            </div>
           </div>
 
-          {/* TOGGLE FOR SAFETY CAR */}
-          <label className="flex items-center gap-3 bg-[#0d1117] border border-slate-800 p-3 sm:p-4 rounded-lg cursor-pointer hover:border-slate-700 transition">
-            <input
-              type="checkbox"
-              name="safetyCarDeployed"
-              checked={telemetry.safetyCarDeployed}
-              onChange={handleChange}
-              className="w-5 h-5 accent-amber-500 shrink-0"
-            />
-            <span className="text-[10px] sm:text-xs font-mono font-bold tracking-wider text-amber-400 uppercase leading-snug">
-              Safety Car Deployed (SC / VSC)
-            </span>
-          </label>
+          <div className="flex flex-col sm:flex-row gap-4 mt-2">
+            <label className="flex-1 flex items-center gap-3 bg-[#0d1117] border border-slate-800 p-3 sm:p-4 rounded-lg cursor-pointer hover:border-slate-700 transition">
+              <input type="checkbox" name="safetyCarDeployed" checked={telemetry.safetyCarDeployed} onChange={handleChange} className="w-5 h-5 accent-amber-500 shrink-0" />
+              <span className="text-[10px] sm:text-xs font-mono font-bold tracking-wider text-amber-400 uppercase leading-snug">Safety Car (SC/VSC)</span>
+            </label>
+            <label className="flex-1 flex items-center gap-3 bg-[#0d1117] border border-slate-800 p-3 sm:p-4 rounded-lg cursor-pointer hover:border-slate-700 transition">
+              <input type="checkbox" name="mandatoryCompoundFulfilled" checked={telemetry.mandatoryCompoundFulfilled} onChange={handleChange} className="w-5 h-5 accent-emerald-500 shrink-0" />
+              <span className="text-[10px] sm:text-xs font-mono font-bold tracking-wider text-emerald-400 uppercase leading-snug">Mandatory Used</span>
+            </label>
+          </div>
 
           <button
             onClick={handleCalculateStrategy}
             disabled={loading}
-            className="mt-2 w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 disabled:opacity-50 text-white font-bold text-sm sm:text-base tracking-wider uppercase rounded-lg shadow-lg transition duration-150 cursor-pointer"
+            className="mt-4 w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 disabled:opacity-50 text-white font-bold text-sm sm:text-base tracking-wider uppercase rounded-lg shadow-lg py-4 transition duration-150 cursor-pointer"
           >
             {loading ? 'Processing...' : 'Calculate Pit Strategy'}
           </button>
