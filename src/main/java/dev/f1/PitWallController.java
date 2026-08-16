@@ -18,8 +18,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = "*")
-public class PitWallController {
+@CrossOrigin(origins = {"http://localhost:5173", "https://pit-wall-ai.vercel.app/"})public class PitWallController {
 
     @Value("${gemini.api.key}")
     private String geminiApiKey;
