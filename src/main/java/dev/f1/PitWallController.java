@@ -32,41 +32,64 @@ public class PitWallController {
         try {
             String geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + geminiApiKey;
 
-            // Safe parsing of all 15 variables
+            // Core Telemetry & Guide Parameters
             int currentLap = Integer.parseInt(String.valueOf(requestPayload.getOrDefault("currentLap", "35")));
+            int totalLaps = Integer.parseInt(String.valueOf(requestPayload.getOrDefault("totalLaps", "70")));
+            int remainingLaps = Math.max(0, totalLaps - currentLap);
             int tireAge = Integer.parseInt(String.valueOf(requestPayload.getOrDefault("tireAge", "16")));
             String tireCompound = String.valueOf(requestPayload.getOrDefault("tireCompound", "Medium"));
+            String tyreDegradationRate = String.valueOf(requestPayload.getOrDefault("tyreDegradationRate", "Medium"));
+            int tyreWarmUpLaps = Integer.parseInt(String.valueOf(requestPayload.getOrDefault("tyreWarmUpLaps", "1")));
+            
             String weatherCondition = String.valueOf(requestPayload.getOrDefault("weatherCondition", "Dry"));
             double trackTemperature = Double.parseDouble(String.valueOf(requestPayload.getOrDefault("trackTemperature", "38.0")));
             String trackOvertakingDifficulty = String.valueOf(requestPayload.getOrDefault("trackOvertakingDifficulty", "Medium"));
+            double pitLaneTimeLoss = Double.parseDouble(String.valueOf(requestPayload.getOrDefault("pitLaneTimeLoss", "22.0")));
+            String pitStopExecutionRisk = String.valueOf(requestPayload.getOrDefault("pitStopExecutionRisk", "Low"));
+            
             double lapTimeDelta = Double.parseDouble(String.valueOf(requestPayload.getOrDefault("lapTimeDelta", "0.0")));
             double gapToCarAhead = Double.parseDouble(String.valueOf(requestPayload.getOrDefault("gapToCarAhead", "2.5")));
             double gapToCarBehind = Double.parseDouble(String.valueOf(requestPayload.getOrDefault("gapToCarBehind", "5.0")));
-            String rivalTireCompound = String.valueOf(requestPayload.getOrDefault("rivalTireCompound", "Hard"));
-            String driverTireManagementSkill = String.valueOf(requestPayload.getOrDefault("driverTireManagementSkill", "Standard"));
+            String currentAirState = String.valueOf(requestPayload.getOrDefault("currentAirState", "Clean Air"));
             String projectedPitExitTraffic = String.valueOf(requestPayload.getOrDefault("projectedPitExitTraffic", "Clean Air"));
+            
+            String rivalTireCompound = String.valueOf(requestPayload.getOrDefault("rivalTireCompound", "Hard"));
+            boolean rivalHasPitted = Boolean.parseBoolean(String.valueOf(requestPayload.getOrDefault("rivalHasPitted", "false")));
+            String driverTireManagementSkill = String.valueOf(requestPayload.getOrDefault("driverTireManagementSkill", "Standard"));
             boolean safetyCar = Boolean.parseBoolean(String.valueOf(requestPayload.getOrDefault("safetyCarDeployed", "false")));
-            boolean mandatoryCompoundFulfilled = Boolean.parseBoolean(String.valueOf(requestPayload.getOrDefault("mandatoryCompoundFulfilled", "false")));
-            double pitLaneTimeLoss = Double.parseDouble(String.valueOf(requestPayload.getOrDefault("pitLaneTimeLoss", "22.0")));
+            boolean mandatoryCompoundFulfilled = Boolean.parseBoolean(String.valueOf(requestPayload.getOrDefault("mandatoryCompoundFulfilled", "true")));
 
             String prompt = String.format(
-                "You are an elite Formula 1 race strategist. Analyze the data and decide to 'Box' or 'Stay Out'.\n" +
-                "RACE LOGIC RULES: \n" +
-                "1. Degradation: Dry limits are Soft=15, Medium=25, Hard=40 laps. If track temp > 40C, reduce lifespan by 3 laps. If driver skill is 'Elite', extend by 3 laps.\n" +
-                "2. Lap Time Delta: If lapTimeDelta is >= +1.5s, the tire cliff is reached. MUST pit.\n" +
-                "3. Mandatory Compound: If it is past lap 65 of 70 and mandatoryCompoundFulfilled is false, MUST pit.\n" +
-                "4. Weather: If tire doesn't match weather (e.g., slicks in rain), MUST pit.\n" +
-                "5. Defensive Undercut: If gapToCarBehind < 2.0s and tire age > 10, Box to defend.\n" +
-                "6. Offensive Undercut: If gapToCarAhead < 1.5s, our tire is older than rivalTireCompound, and trackOvertakingDifficulty is 'High', Box to undercut.\n" +
-                "7. Pit Loss & Traffic: Use the provided pitLaneTimeLoss to calculate track position. Avoid pitting into 'DRS Train' unless safety car is deployed.\n" +
-                "8. Safety Car: Reduces pit loss. Favorable for pitting if tires are older than 50%% of their life.\n" +
-                "INPUTS:\n" +
-                "Lap: %d/70 | Tire Age: %d | Compound: %s | Weather: %s | Track Temp: %.1fC | Overtake Diff: %s\n" +
-                "Lap Delta: %+.1fs | Gap Ahead: %.1fs | Gap Behind: %.1fs | Rival Tire: %s | Driver Skill: %s\n" +
-                "Pit Exit Traffic: %s | Safety Car: %b | Mandatory Used: %b | Pit Loss: %.1fs\n",
-                currentLap, tireAge, tireCompound, weatherCondition, trackTemperature, trackOvertakingDifficulty,
-                lapTimeDelta, gapToCarAhead, gapToCarBehind, rivalTireCompound, driverTireManagementSkill,
-                projectedPitExitTraffic, safetyCar, mandatoryCompoundFulfilled, pitLaneTimeLoss
+                "You are an elite Formula 1 Chief Race Strategist on the Pit Wall.\n" +
+                "Evaluate the race scenario using complete strategic trade-off modeling (Pit Loss vs Fresh Tyre Pace Delta vs Track Position):\n\n" +
+                "CORE STRATEGIC PRINCIPLES:\n" +
+                "1. TIME DELTA VS REMAINING LAPS: A pit stop costs %.1fs (reduced under Safety Car/VSC). With %d laps remaining, calculate whether the fresh-tyre pace advantage will overcome this loss before the checkered flag.\n" +
+                "2. UNDERCUT MECHANIC: Trigger 'Box' if trailing a rival within undercut range (gapToCarAhead < 2.5s), current tyres are degrading, projected pit exit is 'Clean Air', and tyre warm-up is low (<=1 lap).\n" +
+                "3. OVERCUT MECHANIC: If rivalHasPitted is TRUE, our currentAirState is 'Clean Air', tyre degradation is manageable, and our lapTimeDelta is strong (<= +0.5s), trigger 'Stay Out' to overcut.\n" +
+                "4. TYRE DEGRADATION & CLIFF: Compound limits (Soft=15, Med=25, Hard=40). If tyreDegradationRate is 'High' or trackTemp > 40C, accelerate wear by 4 laps. If lapTimeDelta >= +1.5s, tyre cliff reached: MUST Box.\n" +
+                "5. TYRE WARM-UP PENALTY: If tyreWarmUpLaps >= 2 (e.g. hard compound on cool track), discount undercut power and favor staying out.\n" +
+                "6. TRAFFIC & TRACK POSITION: If trackOvertakingDifficulty is 'High' (e.g., Monaco/Hungaroring) and projected exit is 'DRS Train', DO NOT BOX unless tyres are at catastrophic wear or under Safety Car.\n" +
+                "7. REGULATORY COMPLIANCE: If remaining laps <= 5 and mandatoryCompoundFulfilled is FALSE, MUST return 'Box'.\n" +
+                "8. SAFETY CAR / VSC: Neutralization halves pit loss. Strongly favor pitting if tyres > 40%% worn.\n\n" +
+                "LIVE TELEMETRY:\n" +
+                "- Lap: %d / %d (%d laps remaining)\n" +
+                "- Tyre: %s (Age: %d laps, Deg Rate: %s, Warm-Up: %d laps)\n" +
+                "- Weather: %s | Track Temp: %.1f°C | Overtaking Difficulty: %s\n" +
+                "- Delta to Optimal Lap Time: %+.1fs | Current Track Air: %s\n" +
+                "- Gap Ahead: %.1fs | Gap Behind: %.1fs | Pit Exit: %s\n" +
+                "- Rival Compound: %s | Rival Has Pitted: %b\n" +
+                "- Driver Skill: %s | Pit Execution Risk: %s | Base Pit Loss: %.1fs\n" +
+                "- Safety Car: %b | Mandatory Compound Used: %b\n\n" +
+                "Return strategic decision and concise reasoning citing the specific governing trade-off.",
+                pitLaneTimeLoss, remainingLaps,
+                currentLap, totalLaps, remainingLaps,
+                tireCompound, tireAge, tyreDegradationRate, tyreWarmUpLaps,
+                weatherCondition, trackTemperature, trackOvertakingDifficulty,
+                lapTimeDelta, currentAirState,
+                gapToCarAhead, gapToCarBehind, projectedPitExitTraffic,
+                rivalTireCompound, rivalHasPitted,
+                driverTireManagementSkill, pitStopExecutionRisk, pitLaneTimeLoss,
+                safetyCar, mandatoryCompoundFulfilled
             );
 
             Map<String, Object> part = Map.of("text", prompt);
@@ -76,8 +99,8 @@ public class PitWallController {
                 "type", "OBJECT",
                 "properties", Map.of(
                     "decision", Map.of("type", "STRING", "enum", List.of("Box", "Stay Out")),
-                    "reasoning", Map.of("type", "STRING", "description", "Professional strategic explanation addressing the new variables like track temp, lap delta, or overtake difficulty."),
-                    "foundryCitation", Map.of("type", "STRING", "description", "A realistic telemetry metric or FIA sporting regulation.")
+                    "reasoning", Map.of("type", "STRING", "description", "Strategic rationale detailing undercut/overcut calculations, degradation rate, tyre warm-up, traffic delta, or lap loss trade-offs."),
+                    "foundryCitation", Map.of("type", "STRING", "description", "Realistic telemetry metric or FIA sporting regulation citation.")
                 ),
                 "required", List.of("decision", "reasoning", "foundryCitation")
             );
@@ -88,23 +111,34 @@ public class PitWallController {
                 "temperature", 0.1
             );
 
-            Map<String, Object> body = Map.of("contents", List.of(content), "generationConfig", generationConfig);
+            Map<String, Object> body = Map.of(
+                "contents", List.of(content),
+                "generationConfig", generationConfig
+            );
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
 
             Map<String, Object> apiResponse = restTemplate.postForObject(geminiUrl, request, Map.class);
-            
+
             List<Map<String, Object>> candidates = (List<Map<String, Object>>) apiResponse.get("candidates");
-            String jsonResult = (String) ((List<Map<String, Object>>) ((Map<String, Object>) candidates.get(0).get("content")).get("parts")).get(0).get("text");
+            Map<String, Object> firstCandidate = candidates.get(0);
+            Map<String, Object> contentObj = (Map<String, Object>) firstCandidate.get("content");
+            List<Map<String, Object>> parts = (List<Map<String, Object>>) contentObj.get("parts");
+            String jsonResult = (String) parts.get(0).get("text");
+
             jsonResult = jsonResult.replace("```json", "").replace("```", "").trim();
 
             return ResponseEntity.ok(objectMapper.readValue(jsonResult, Map.class));
 
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.ok(Map.of("decision", "Stay Out", "reasoning", "Backend error: " + e.getMessage(), "foundryCitation", "Error Code 500"));
+            return ResponseEntity.ok(Map.of(
+                "decision", "Stay Out",
+                "reasoning", "Strategy computation error: " + e.getMessage(),
+                "foundryCitation", "Error Code 500"
+            ));
         }
     }
 }
