@@ -2,6 +2,24 @@
 
 > **Real-Time Strategic Inference Engine for Formula 1 Pit Operations**
 
+---
+
+## 🌐 Live Application
+
+**Experience the tactical engine in action:** [Pit Wall Intelligence - Live Dashboard](https://pit-wall-ai.vercel.app/)
+
+![Frontend on Vercel](https://img.shields.io/badge/Frontend%20-Vercel-black?style=for-the-badge&logo=vercel)
+![Backend on Render](https://img.shields.io/badge/Backend-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)
+
+> ⚠️ **Note on Performance:** The Spring Boot backend is hosted on Render's free tier, which spins down after 15 minutes of inactivity. **Please allow 30–50 seconds for your first "Calculate Pit Strategy" request** as the server cold-starts. Subsequent calculations will execute in milliseconds.
+
+---
+
+### 📸 Dashboard Preview
+<!-- Replace the link below with the actual path to your screenshot once you upload it to your repo -->
+![Pit Wall Intelligence Dashboard](pitwall-ui/pitwall-dashboard.png)
+
+
 **Pit Wall Intelligence** is a full-stack tactical decision dashboard engineered to simulate and compute Formula 1 race strategies. Powered by Google's **Gemini 2.5 Flash** model with strict structured schema constraints, the application evaluates complex dynamic race parameters—including tire degradation rates, traffic dirty air, undercut/overcut windows, track temperatures, and neutralization phases (SC/VSC)—to deliver actionable pit decisions (`BOX` vs. `STAY OUT`) in milliseconds.
 
 ---
@@ -187,61 +205,6 @@ The frontend will be available at `http://localhost:5173`.
 
 ---
 
-## 🚢 Deployment Guide
-
-### **Deploying Backend to Render (Docker)**
-
-1. Ensure your root repository includes the multi-stage `Dockerfile`:
-```dockerfile
-# Stage 1: Build JAR using Maven & Java 21
-FROM maven:3.9.5-eclipse-temurin-21 AS build
-WORKDIR /app
-COPY . .
-RUN mvn clean package -DskipTests
-
-# Stage 2: Runtime image using Java 21 Alpine
-FROM eclipse-temurin:21-jre-alpine
-WORKDIR /app
-COPY --from=build /app/target/*.jar app.jar
-EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
-
-```
-
-
-2. Create a new **Web Service** on Render and connect your GitHub repository.
-3. Select **Docker** as the runtime.
-4. Add the following **Environment Variable** in the Render Dashboard:
-* `GEMINI_API_KEY` = `your_actual_gemini_api_key`
-
-
-5. Deploy the service to get your live API URL (e.g., `https://pit-wall-api.onrender.com`).
-
----
-
-### **Deploying Frontend to Vercel**
-
-1. Connect your GitHub repository to **Vercel**.
-2. Set the **Root Directory** in the Vercel project settings to `pitwall-ui`.
-3. The framework preset will automatically detect **Vite**.
-4. Ensure `.env.production` (inside `pitwall-ui`) contains your live Render API URL:
-```env
-VITE_API_URL=[https://pit-wall-api.onrender.com/api/strategy](https://pit-wall-api.onrender.com/api/strategy)
-
-```
-
-
-5. Deploy the project.
-6. In your `PitWallController.java`, lock down `@CrossOrigin` to your live Vercel domain:
-```java
-@CrossOrigin(origins = {"http://localhost:5173", "[https://your-app.vercel.app](https://your-app.vercel.app)"})
-
-```
-
-
-
----
-
 ## 📡 API Specification
 
 ### `POST /api/strategy`
@@ -303,7 +266,3 @@ VITE_API_URL=[https://pit-wall-api.onrender.com/api/strategy](https://pit-wall-a
 ## 📄 License
 
 This project is open-source and distributed under the [MIT License](https://www.google.com/search?q=LICENSE).
-
-```
-
-```
