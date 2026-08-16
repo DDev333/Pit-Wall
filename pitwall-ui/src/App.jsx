@@ -11,13 +11,20 @@ const COMPOUND_COLORS = {
 
 export default function App() {
   const [telemetry, setTelemetry] = useState({
+    // Location & Event
+    country: 'Netherlands',
+    trackName: 'Circuit Zandvoort',
+    sessionType: 'Grand Prix',
+
+    // Race & Track State
     currentLap: 35,
     totalLaps: 70,
     weatherCondition: 'Dry',
     trackTemperature: 38.0,
     trackOvertakingDifficulty: 'Medium',
     safetyCarDeployed: false,
-    
+
+    // Car & Tyre Telemetry
     tireCompound: 'Medium',
     tireAge: 16,
     tyreDegradationRate: 'Medium',
@@ -25,14 +32,16 @@ export default function App() {
     lapTimeDelta: 0.2,
     driverTireManagementSkill: 'Elite',
     mandatoryCompoundFulfilled: true,
-    
+
+    // Competitor & Traffic Analysis
     gapToCarAhead: 1.8,
     gapToCarBehind: 4.2,
     currentAirState: 'Clean Air',
     projectedPitExitTraffic: 'Clean Air',
     rivalTireCompound: 'Hard',
     rivalHasPitted: false,
-    
+
+    // Pit Stop Operations
     pitLaneTimeLoss: 22.0,
     pitStopExecutionRisk: 'Low',
   });
@@ -75,7 +84,8 @@ export default function App() {
     };
 
     try {
-      const response = await fetch(import.meta.env.VITE_API_URL, {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/strategy';
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -92,9 +102,7 @@ export default function App() {
   };
 
   const remainingLaps = Math.max(0, telemetry.totalLaps - telemetry.currentLap);
-  
-  // Fixed height ensures inputs and checkboxes align perfectly
-  const inputClass = "w-full bg-black/40 border border-slate-700 rounded-lg px-3 h-[38px] text-sm focus:border-red-500 focus:outline-none transition-colors";
+  const inputClass = "w-full bg-black/40 border border-slate-700 rounded-lg px-3 h-[42px] text-sm focus:border-red-500 focus:outline-none transition-colors";
 
   return (
     <div className="min-h-screen bg-[#0b0e14] text-slate-200 px-4 py-6 md:py-8 lg:px-8 max-w-[1400px] mx-auto">
@@ -122,8 +130,31 @@ export default function App() {
             <h3 className="text-xs font-bold text-sky-400 mb-4 border-b border-slate-800 pb-2 uppercase tracking-widest flex items-center gap-2">
               <span className="text-lg">🌍</span> Race & Track State
             </h3>
-            {/* 4-Column Master Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+              
+              {/* NEW ROW: Location & Session */}
+              <div className="sm:col-span-1">
+                <label className="text-[10px] font-mono text-slate-400 block mb-1">COUNTRY</label>
+                <input type="text" name="country" value={telemetry.country} onChange={handleChange} className={inputClass} />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="text-[10px] font-mono text-slate-400 block mb-1">TRACK NAME</label>
+                <input type="text" name="trackName" value={telemetry.trackName} onChange={handleChange} className={inputClass} />
+              </div>
+              <div className="sm:col-span-1">
+                <label className="text-[10px] font-mono text-slate-400 block mb-1">SESSION</label>
+                <select name="sessionType" value={telemetry.sessionType} onChange={handleChange} className={inputClass}>
+                  <option value="Grand Prix">Grand Prix</option>
+                  <option value="Sprint">Sprint</option>
+                  <option value="Qualifying">Qualifying (Q1-Q3)</option>
+                  <option value="Sprint Qualifying">Sprint Qualifying (SQ)</option>
+                  <option value="FP1">Free Practice 1</option>
+                  <option value="FP2">Free Practice 2</option>
+                  <option value="FP3">Free Practice 3</option>
+                </select>
+              </div>
+
+              {/* EXISTING ROW: Lap Data & Weather */}
               <div>
                 <label className="text-[10px] font-mono text-slate-400 block mb-1">CURRENT LAP</label>
                 <input type="number" name="currentLap" value={telemetry.currentLap} onChange={handleChange} className={inputClass} />
@@ -144,8 +175,8 @@ export default function App() {
                 <label className="text-[10px] font-mono text-slate-400 block mb-1">TRACK TEMP (°C)</label>
                 <input type="number" step="0.1" name="trackTemperature" value={telemetry.trackTemperature} onChange={handleChange} className={inputClass} />
               </div>
-              
-              {/* Row 2: Spanning columns to align perfectly */}
+
+              {/* EXISTING ROW: Overtaking & SC */}
               <div className="sm:col-span-2">
                 <label className="text-[10px] font-mono text-slate-400 block mb-1">OVERTAKING DIFF</label>
                 <select name="trackOvertakingDifficulty" value={telemetry.trackOvertakingDifficulty} onChange={handleChange} className={inputClass}>
@@ -155,10 +186,9 @@ export default function App() {
                 </select>
               </div>
               <div className="sm:col-span-2">
-                {/* Invisible label ensures vertical alignment with the select box next to it */}
                 <label className="text-[10px] font-mono text-slate-400 block mb-1 opacity-0">TOGGLE</label>
-                <label className="w-full flex items-center gap-3 bg-black/40 border border-slate-700 rounded-lg px-3 h-[38px] cursor-pointer hover:border-amber-500/50 transition-colors">
-                  <input type="checkbox" name="safetyCarDeployed" checked={telemetry.safetyCarDeployed} onChange={handleChange} className="w-4 h-4 accent-amber-500 shrink-0" />
+                <label className="w-full flex items-center gap-3 bg-black/40 border border-slate-700 rounded-lg px-3 h-[42px] cursor-pointer hover:border-amber-500/50 transition-colors">
+                  <input type="checkbox" name="safetyCarDeployed" checked={telemetry.safetyCarDeployed} onChange={handleChange} className="w-5 h-5 accent-amber-500 shrink-0" />
                   <span className="text-[10px] sm:text-xs font-mono font-bold text-amber-400 uppercase">Safety Car (SC/VSC)</span>
                 </label>
               </div>
@@ -197,8 +227,7 @@ export default function App() {
                 <label className="text-[10px] font-mono text-slate-400 block mb-1">WARM-UP (LAPS)</label>
                 <input type="number" name="tyreWarmUpLaps" value={telemetry.tyreWarmUpLaps} onChange={handleChange} className={inputClass} />
               </div>
-              
-              {/* Row 2 */}
+
               <div className="sm:col-span-1">
                 <label className="text-[10px] font-mono text-slate-400 block mb-1">LAP DELTA (S)</label>
                 <input type="number" step="0.1" name="lapTimeDelta" value={telemetry.lapTimeDelta} onChange={handleChange} className={inputClass} />
@@ -213,8 +242,8 @@ export default function App() {
               </div>
               <div className="sm:col-span-1">
                 <label className="text-[10px] font-mono text-slate-400 block mb-1 opacity-0">TOGGLE</label>
-                <label className="w-full flex items-center gap-3 bg-black/40 border border-slate-700 rounded-lg px-3 h-[38px] cursor-pointer hover:border-emerald-500/50 transition-colors">
-                  <input type="checkbox" name="mandatoryCompoundFulfilled" checked={telemetry.mandatoryCompoundFulfilled} onChange={handleChange} className="w-4 h-4 accent-emerald-500 shrink-0" />
+                <label className="w-full flex items-center gap-3 bg-black/40 border border-slate-700 rounded-lg px-3 h-[42px] cursor-pointer hover:border-emerald-500/50 transition-colors">
+                  <input type="checkbox" name="mandatoryCompoundFulfilled" checked={telemetry.mandatoryCompoundFulfilled} onChange={handleChange} className="w-5 h-5 accent-emerald-500 shrink-0" />
                   <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase">Mandatory</span>
                 </label>
               </div>
@@ -245,13 +274,12 @@ export default function App() {
               </div>
               <div>
                 <label className="text-[10px] font-mono text-slate-400 block mb-1 opacity-0">TOGGLE</label>
-                <label className="w-full flex items-center gap-3 bg-black/40 border border-slate-700 rounded-lg px-3 h-[38px] cursor-pointer hover:border-sky-500/50 transition-colors">
-                  <input type="checkbox" name="rivalHasPitted" checked={telemetry.rivalHasPitted} onChange={handleChange} className="w-4 h-4 accent-sky-500 shrink-0" />
+                <label className="w-full flex items-center gap-3 bg-black/40 border border-slate-700 rounded-lg px-3 h-[42px] cursor-pointer hover:border-sky-500/50 transition-colors">
+                  <input type="checkbox" name="rivalHasPitted" checked={telemetry.rivalHasPitted} onChange={handleChange} className="w-5 h-5 accent-sky-500 shrink-0" />
                   <span className="text-[10px] font-mono font-bold text-sky-400 uppercase">Rival Pitted</span>
                 </label>
               </div>
 
-              {/* Row 2 */}
               <div className="sm:col-span-2">
                 <label className="text-[10px] font-mono text-slate-400 block mb-1">CURRENT AIR STATE</label>
                 <select name="currentAirState" value={telemetry.currentAirState} onChange={handleChange} className={inputClass}>

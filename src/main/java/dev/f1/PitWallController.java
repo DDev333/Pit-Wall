@@ -18,7 +18,8 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = {"http://localhost:5173", "https://pit-wall-ai.vercel.app/"})public class PitWallController {
+@CrossOrigin(origins = {"http://localhost:5173", "https://pit-wall-ai.vercel.app/"})
+public class PitWallController {
 
     @Value("${gemini.api.key}")
     private String geminiApiKey;
@@ -30,6 +31,11 @@ import java.util.Map;
     public ResponseEntity<Map<String, Object>> calculateStrategy(@RequestBody Map<String, Object> requestPayload) {
         try {
             String geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + geminiApiKey;
+
+            // Location & Event Parameters
+            String country = String.valueOf(requestPayload.getOrDefault("country", "Netherlands"));
+            String trackName = String.valueOf(requestPayload.getOrDefault("trackName", "Circuit Zandvoort"));
+            String sessionType = String.valueOf(requestPayload.getOrDefault("sessionType", "Grand Prix"));
 
             // Core Telemetry & Guide Parameters
             int currentLap = Integer.parseInt(String.valueOf(requestPayload.getOrDefault("currentLap", "35")));
@@ -61,6 +67,9 @@ import java.util.Map;
             String prompt = String.format(
                 "You are an elite Formula 1 Chief Race Strategist on the Pit Wall.\n" +
                 "Evaluate the race scenario using complete strategic trade-off modeling (Pit Loss vs Fresh Tyre Pace Delta vs Track Position):\n\n" +
+                "// RACE & EVENT CONTEXT\n" +
+                "Location: %s, %s\n" +
+                "Session Type: %s\n\n" +
                 "CORE STRATEGIC PRINCIPLES:\n" +
                 "1. TIME DELTA VS REMAINING LAPS: A pit stop costs %.1fs (reduced under Safety Car/VSC). With %d laps remaining, calculate whether the fresh-tyre pace advantage will overcome this loss before the checkered flag.\n" +
                 "2. UNDERCUT MECHANIC: Trigger 'Box' if trailing a rival within undercut range (gapToCarAhead < 2.5s), current tyres are degrading, projected pit exit is 'Clean Air', and tyre warm-up is low (<=1 lap).\n" +
@@ -80,6 +89,7 @@ import java.util.Map;
                 "- Driver Skill: %s | Pit Execution Risk: %s | Base Pit Loss: %.1fs\n" +
                 "- Safety Car: %b | Mandatory Compound Used: %b\n\n" +
                 "Return strategic decision and concise reasoning citing the specific governing trade-off.",
+                trackName, country, sessionType,
                 pitLaneTimeLoss, remainingLaps,
                 currentLap, totalLaps, remainingLaps,
                 tireCompound, tireAge, tyreDegradationRate, tyreWarmUpLaps,
