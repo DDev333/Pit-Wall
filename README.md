@@ -260,9 +260,3 @@ The frontend will be available at `http://localhost:5173`.
 * [ ] Multi-car strategy simulations (Driver A vs. Driver B split strategies).
 * [ ] Dynamic weather radar forecasts and rain intensity progression.
 * [ ] Exportable post-race telemetry debrief reports (PDF/Markdown).
-
----
-
-## 📄 License
-
-This project is open-source and distributed under the [MIT License](https://www.google.com/search?q=LICENSE).
